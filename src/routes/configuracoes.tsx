@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Building2, Save } from "lucide-react";
+import { Building2, Save, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ProdutoImagem } from "@/components/produto-imagem";
+import { uploadImage } from "@/lib/supabase";
 import { EMPRESA_VAZIA, useStore, type Empresa } from "@/lib/store";
 import { maskDocumento, validarDocumento } from "@/lib/documento";
 
@@ -36,6 +37,7 @@ function ConfiguracoesPage() {
   const { empresa, saveEmpresa, ready } = useStore();
   const [form, setForm] = useState<Empresa>(EMPRESA_VAZIA);
   const [erroDoc, setErroDoc] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (ready) setForm(empresa ?? EMPRESA_VAZIA);
@@ -43,6 +45,20 @@ function ConfiguracoesPage() {
 
   const set = (k: keyof Empresa) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
   const docErro = erroDoc;
+
+  const handleLogo = async (file: File | undefined) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadImage(file, "empresa");
+      set("logo")(url);
+      toast.success("Logo enviado.");
+    } catch {
+      toast.error("Falha ao enviar logo.");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -60,7 +76,7 @@ function ConfiguracoesPage() {
 
       <form
         className="space-y-5 rounded-xl border border-border bg-card p-6 shadow-sm"
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault();
           const erro = validarDocumento(form.documento);
           setErroDoc(erro);
@@ -68,8 +84,12 @@ function ConfiguracoesPage() {
             toast.error(erro);
             return;
           }
-          saveEmpresa(form);
-          toast.success("Dados da empresa salvos");
+          try {
+            await saveEmpresa(form);
+            toast.success("Dados da empresa salvos");
+          } catch {
+            toast.error("Erro ao salvar dados. Verifique a conexão.");
+          }
         }}
       >
         <div className="grid gap-4 sm:grid-cols-2">
@@ -127,12 +147,24 @@ function ConfiguracoesPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="logo">URL do logo</Label>
-            <Input
-              id="logo"
-              value={form.logo}
-              onChange={(e) => set("logo")(e.target.value)}
-              placeholder="https://..."
-            />
+            <div className="flex gap-2">
+              <Input
+                id="logo"
+                value={form.logo}
+                onChange={(e) => set("logo")(e.target.value)}
+                placeholder="https://..."
+              />
+              <label className="inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-3 text-sm font-medium shadow-sm hover:bg-accent">
+                <Upload className="size-4" />
+                {uploading ? "Enviando..." : "Enviar"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleLogo(e.target.files?.[0])}
+                />
+              </label>
+            </div>
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="endereco">Endereço completo</Label>

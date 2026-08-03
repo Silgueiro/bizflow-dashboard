@@ -131,7 +131,7 @@ function OrcamentosPage() {
       linhas.map((l) => (l.itemId === itemId ? { ...l, quantidade: Math.max(1, qtd || 1) } : l)),
     );
 
-  const salvar = () => {
+  const salvar = async () => {
     if (!clienteId) {
       toast.error("Selecione o cliente.");
       return;
@@ -140,24 +140,32 @@ function OrcamentosPage() {
       toast.error("Adicione ao menos um item ao orçamento.");
       return;
     }
-    const id = saveOrcamento({
-      clienteId,
-      data,
-      validade,
-      itens: linhas,
-      observacoes,
-      status: orcamentos.find((o) => o.id === editingId)?.status ?? "Pendente",
-      id: editingId ?? undefined,
-    });
-    toast.success(editingId ? "Orçamento atualizado." : "Orçamento criado com sucesso.");
-    setOpen(false);
-    if (!editingId) navigate({ to: "/orcamento/$id", params: { id } });
+    try {
+      const id = await saveOrcamento({
+        clienteId,
+        data,
+        validade,
+        itens: linhas,
+        observacoes,
+        status: orcamentos.find((o) => o.id === editingId)?.status ?? "Pendente",
+        id: editingId ?? undefined,
+      });
+      toast.success(editingId ? "Orçamento atualizado." : "Orçamento criado com sucesso.");
+      setOpen(false);
+      if (!editingId) navigate({ to: "/orcamento/$id", params: { id } });
+    } catch {
+      toast.error("Erro ao salvar orçamento. Verifique a conexão.");
+    }
   };
 
-  const confirmarExclusao = () => {
+  const confirmarExclusao = async () => {
     if (!toDelete) return;
-    removeOrcamento(toDelete.id);
-    toast.success("Orçamento excluído.");
+    try {
+      await removeOrcamento(toDelete.id);
+      toast.success("Orçamento excluído.");
+    } catch {
+      toast.error("Erro ao excluir orçamento.");
+    }
     setToDelete(null);
   };
 
@@ -211,9 +219,13 @@ function OrcamentosPage() {
                       </span>
                       <Select
                         value={o.status}
-                        onValueChange={(v) => {
-                          setStatus(o.id, v as StatusOrcamento);
-                          toast.success(`Status alterado para ${v}.`);
+                        onValueChange={async (v) => {
+                          try {
+                            await setStatus(o.id, v as StatusOrcamento);
+                            toast.success(`Status alterado para ${v}.`);
+                          } catch {
+                            toast.error("Erro ao alterar status.");
+                          }
                         }}
                       >
                         <SelectTrigger className="w-[130px]">

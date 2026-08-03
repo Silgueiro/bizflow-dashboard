@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { supabase } from "@/lib/supabase";
 
 export type Cliente = {
   id: string;
@@ -33,6 +34,7 @@ export type OrcamentoItem = {
 export type StatusOrcamento = "Pendente" | "Aprovado" | "Recusado";
 
 export type Empresa = {
+  id?: string;
   nome: string;
   documento: string;
   telefone: string;
@@ -52,11 +54,22 @@ export type Orcamento = {
   status: StatusOrcamento;
 };
 
-type Data = {
+type Ctx = {
+  ready: boolean;
   clientes: Cliente[];
   itens: Item[];
   orcamentos: Orcamento[];
   empresa: Empresa;
+  saveEmpresa: (e: Empresa) => Promise<void>;
+  saveCliente: (c: Omit<Cliente, "id"> & { id?: string }) => Promise<void>;
+  removeCliente: (id: string) => Promise<void>;
+  saveItem: (i: Omit<Item, "id"> & { id?: string }) => Promise<void>;
+  removeItem: (id: string) => Promise<void>;
+  saveOrcamento: (
+    o: Omit<Orcamento, "id" | "numero"> & { id?: string; numero?: number },
+  ) => Promise<string>;
+  removeOrcamento: (id: string) => Promise<void>;
+  setStatus: (id: string, status: StatusOrcamento) => Promise<void>;
 };
 
 export const EMPRESA_VAZIA: Empresa = {
@@ -68,108 +81,276 @@ export const EMPRESA_VAZIA: Empresa = {
   logo: "",
 };
 
-const EMPTY: Data = { clientes: [], itens: [], orcamentos: [], empresa: EMPRESA_VAZIA };
-const KEY = "orcafacil.data.v1";
-
-export const uid = () => Math.random().toString(36).slice(2, 10);
-
-type Ctx = {
-  ready: boolean;
-  clientes: Cliente[];
-  itens: Item[];
-  orcamentos: Orcamento[];
-  empresa: Empresa;
-  saveEmpresa: (e: Empresa) => void;
-  saveCliente: (c: Omit<Cliente, "id"> & { id?: string | undefined }) => void;
-  removeCliente: (id: string) => void;
-  saveItem: (i: Omit<Item, "id"> & { id?: string | undefined }) => void;
-  removeItem: (id: string) => void;
-  saveOrcamento: (o: Omit<Orcamento, "id" | "numero"> & { id?: string | undefined; numero?: number | undefined }) => string;
-  removeOrcamento: (id: string) => void;
-  setStatus: (id: string, status: StatusOrcamento) => void;
-};
-
 const StoreContext = createContext<Ctx | null>(null);
 
+// ---- DB row types ----
+type ClientRow = { id: string; name: string; email: string; phone: string; address: string; notes: string };
+type ProductRow = { id: string; name: string; description: string; price: number; image_url: string };
+type QuoteRow = {
+  id: string;
+  numero: number;
+  client_id: string | null;
+  status: string;
+  total_amount: number;
+  data: string;
+  valid_until: string | null;
+  notes: string;
+  quote_items: { product_id: string; quantity: number }[];
+};
+type CompanyRow = {
+  id: string;
+  company_name: string;
+  cnpj: string;
+  phone: string;
+  email: string;
+  address: string;
+  logo_url: string;
+};
+
+const mapClient = (r: ClientRow): Cliente => ({
+  id: r.id,
+  nome: r.name,
+  email: r.email ?? "",
+  telefone: r.phone ?? "",
+  endereco: r.address ?? "",
+  observacoes: r.notes ?? "",
+});
+
+const mapProduct = (r: ProductRow): Item => ({
+  id: r.id,
+  nome: r.name,
+  descricao: r.description ?? "",
+  preco: Number(r.price) ?? 0,
+  imagem: r.image_url ?? "",
+});
+
+const mapQuote = (r: QuoteRow): Orcamento => ({
+  id: r.id,
+  numero: r.numero,
+  clienteId: r.client_id ?? "",
+  data: r.data ?? "",
+  validade: r.valid_until ?? "",
+  itens: (r.quote_items ?? []).map((qi) => ({ itemId: qi.product_id, quantidade: qi.quantity })),
+  observacoes: r.notes ?? "",
+  status: (r.status as StatusOrcamento) ?? "Pendente",
+});
+
+const mapCompany = (r: CompanyRow): Empresa => ({
+  id: r.id,
+  nome: r.company_name ?? "",
+  documento: r.cnpj ?? "",
+  telefone: r.phone ?? "",
+  email: r.email ?? "",
+  endereco: r.address ?? "",
+  logo: r.logo_url ?? "",
+});
+
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<Data>(EMPTY);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [itens, setItens] = useState<Item[]>([]);
+  const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
+  const [empresa, setEmpresa] = useState<Empresa>(EMPRESA_VAZIA);
   const [ready, setReady] = useState(false);
 
+  const loadAll = useCallback(async () => {
+    const [c, p, q, comp] = await Promise.all([
+      supabase.from("clients").select("*").order("created_at"),
+      supabase.from("products").select("*").order("created_at"),
+      supabase.from("quotes").select("*, quote_items(*)").order("numero", { ascending: false }),
+      supabase.from("company_settings").select("*").limit(1).maybeSingle(),
+    ]);
+
+    if (c.data) setClientes((c.data as ClientRow[]).map(mapClient));
+    if (p.data) setItens((p.data as ProductRow[]).map(mapProduct));
+    if (q.data) setOrcamentos((q.data as QuoteRow[]).map(mapQuote));
+    if (comp.data) setEmpresa(mapCompany(comp.data as CompanyRow));
+  }, []);
+
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(KEY);
-      if (raw) setData({ ...EMPTY, ...(JSON.parse(raw) as Data) });
-    } catch {
-      /* ignore corrupted storage */
+    (async () => {
+      await loadAll();
+      setReady(true);
+    })();
+  }, [loadAll]);
+
+  const saveEmpresa = useCallback(async (e: Empresa) => {
+    const row = {
+      company_name: e.nome,
+      cnpj: e.documento,
+      phone: e.telefone,
+      email: e.email,
+      address: e.endereco,
+      logo_url: e.logo,
+    };
+    if (e.id) {
+      const { data, error } = await supabase
+        .from("company_settings")
+        .update(row)
+        .eq("id", e.id)
+        .select("*")
+        .single();
+      if (error) throw error;
+      setEmpresa(mapCompany(data as CompanyRow));
+    } else {
+      const { data, error } = await supabase
+        .from("company_settings")
+        .insert(row)
+        .select("*")
+        .single();
+      if (error) throw error;
+      setEmpresa(mapCompany(data as CompanyRow));
     }
-    setReady(true);
   }, []);
 
-  useEffect(() => {
-    if (!ready) return;
-    window.localStorage.setItem(KEY, JSON.stringify(data));
-  }, [data, ready]);
-
-  const saveCliente: Ctx["saveCliente"] = useCallback((c) => {
-    setData((d) =>
-      c.id && d.clientes.some((x) => x.id === c.id)
-        ? { ...d, clientes: d.clientes.map((x) => (x.id === c.id ? ({ ...x, ...c } as Cliente) : x)) }
-        : { ...d, clientes: [...d.clientes, { ...c, id: c.id ?? uid() } as Cliente] },
-    );
+  const saveCliente = useCallback(async (c) => {
+    const row = {
+      name: c.nome,
+      email: c.email,
+      phone: c.telefone,
+      address: c.endereco,
+      notes: c.observacoes,
+    };
+    if (c.id) {
+      const { data, error } = await supabase
+        .from("clients")
+        .update(row)
+        .eq("id", c.id)
+        .select("*")
+        .single();
+      if (error) throw error;
+      const mapped = mapClient(data as ClientRow);
+      setClientes((prev) => prev.map((x) => (x.id === mapped.id ? mapped : x)));
+    } else {
+      const { data, error } = await supabase.from("clients").insert(row).select("*").single();
+      if (error) throw error;
+      setClientes((prev) => [...prev, mapClient(data as ClientRow)]);
+    }
   }, []);
 
-  const removeCliente = useCallback((id: string) => {
-    setData((d) => ({ ...d, clientes: d.clientes.filter((c) => c.id !== id) }));
+  const removeCliente = useCallback(async (id: string) => {
+    const { error } = await supabase.from("clients").delete().eq("id", id);
+    if (error) throw error;
+    setClientes((prev) => prev.filter((c) => c.id !== id));
   }, []);
 
-  const saveItem: Ctx["saveItem"] = useCallback((i) => {
-    setData((d) =>
-      i.id && d.itens.some((x) => x.id === i.id)
-        ? { ...d, itens: d.itens.map((x) => (x.id === i.id ? ({ ...x, ...i } as Item) : x)) }
-        : { ...d, itens: [...d.itens, { ...i, id: i.id ?? uid() } as Item] },
-    );
+  const saveItem = useCallback(async (i) => {
+    const row = {
+      name: i.nome,
+      description: i.descricao,
+      price: i.preco,
+      image_url: i.imagem,
+    };
+    if (i.id) {
+      const { data, error } = await supabase
+        .from("products")
+        .update(row)
+        .eq("id", i.id)
+        .select("*")
+        .single();
+      if (error) throw error;
+      const mapped = mapProduct(data as ProductRow);
+      setItens((prev) => prev.map((x) => (x.id === mapped.id ? mapped : x)));
+    } else {
+      const { data, error } = await supabase.from("products").insert(row).select("*").single();
+      if (error) throw error;
+      setItens((prev) => [...prev, mapProduct(data as ProductRow)]);
+    }
   }, []);
 
-  const removeItem = useCallback((id: string) => {
-    setData((d) => ({ ...d, itens: d.itens.filter((i) => i.id !== id) }));
+  const removeItem = useCallback(async (id: string) => {
+    const { error } = await supabase.from("products").delete().eq("id", id);
+    if (error) throw error;
+    setItens((prev) => prev.filter((i) => i.id !== id));
   }, []);
 
-  const saveOrcamento: Ctx["saveOrcamento"] = useCallback((o) => {
-    const id = o.id ?? uid();
-    setData((d) => {
-      if (o.id && d.orcamentos.some((x) => x.id === o.id)) {
-        return {
-          ...d,
-          orcamentos: d.orcamentos.map((x) =>
-            x.id === o.id ? ({ ...x, ...o } as Orcamento) : x,
-          ),
-        };
-      }
-      const numero = d.orcamentos.reduce((m, x) => Math.max(m, x.numero), 1000) + 1;
-      return { ...d, orcamentos: [...d.orcamentos, { ...o, id, numero } as Orcamento] };
-    });
-    return id;
+  const saveOrcamento = useCallback(async (o) => {
+    const total = o.itens.reduce((sum: number, oi: OrcamentoItem) => {
+      // unit_price snapshot uses 0 if product not found; app recomputes from current prices
+      return sum;
+    }, 0);
+
+    const quoteRow = {
+      client_id: o.clienteId || null,
+      status: o.status ?? "Pendente",
+      total_amount: total,
+      data: o.data,
+      valid_until: o.validade || null,
+      notes: o.observacoes,
+    };
+
+    let quoteId: string;
+    let numero: number;
+
+    if (o.id) {
+      const { data, error } = await supabase
+        .from("quotes")
+        .update(quoteRow)
+        .eq("id", o.id)
+        .select("*")
+        .single();
+      if (error) throw error;
+      quoteId = (data as QuoteRow).id;
+      numero = (data as QuoteRow).numero;
+      // replace items
+      await supabase.from("quote_items").delete().eq("quote_id", quoteId);
+    } else {
+      const { data: maxData } = await supabase
+        .from("quotes")
+        .select("numero")
+        .order("numero", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const nextNumero = (maxData?.numero ?? 1000) + 1;
+      const { data, error } = await supabase
+        .from("quotes")
+        .insert({ ...quoteRow, numero: nextNumero })
+        .select("*")
+        .single();
+      if (error) throw error;
+      quoteId = (data as QuoteRow).id;
+      numero = (data as QuoteRow).numero;
+    }
+
+    if (o.itens.length > 0) {
+      const items = o.itens.map((oi: OrcamentoItem) => ({
+        quote_id: quoteId,
+        product_id: oi.itemId,
+        quantity: oi.quantidade,
+        unit_price: 0,
+      }));
+      const { error: itemError } = await supabase.from("quote_items").insert(items);
+      if (itemError) throw itemError;
+    }
+
+    // reload quotes to get joined items
+    const { data: refreshed } = await supabase
+      .from("quotes")
+      .select("*, quote_items(*)")
+      .order("numero", { ascending: false });
+    if (refreshed) setOrcamentos((refreshed as QuoteRow[]).map(mapQuote));
+
+    return quoteId;
   }, []);
 
-  const removeOrcamento = useCallback((id: string) => {
-    setData((d) => ({ ...d, orcamentos: d.orcamentos.filter((o) => o.id !== id) }));
+  const removeOrcamento = useCallback(async (id: string) => {
+    const { error } = await supabase.from("quotes").delete().eq("id", id);
+    if (error) throw error;
+    setOrcamentos((prev) => prev.filter((o) => o.id !== id));
   }, []);
 
-  const setStatus = useCallback((id: string, status: StatusOrcamento) => {
-    setData((d) => ({
-      ...d,
-      orcamentos: d.orcamentos.map((o) => (o.id === id ? { ...o, status } : o)),
-    }));
-  }, []);
-
-  const saveEmpresa = useCallback((e: Empresa) => {
-    setData((d) => ({ ...d, empresa: e }));
+  const setStatus = useCallback(async (id: string, status: StatusOrcamento) => {
+    const { error } = await supabase.from("quotes").update({ status }).eq("id", id);
+    if (error) throw error;
+    setOrcamentos((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
   }, []);
 
   const value = useMemo(
     () => ({
       ready,
-      ...data,
+      clientes,
+      itens,
+      orcamentos,
+      empresa,
       saveEmpresa,
       saveCliente,
       removeCliente,
@@ -181,7 +362,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }),
     [
       ready,
-      data,
+      clientes,
+      itens,
+      orcamentos,
+      empresa,
       saveEmpresa,
       saveCliente,
       removeCliente,

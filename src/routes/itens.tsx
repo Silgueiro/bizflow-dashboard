@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Package, Plus, Pencil, Trash2 } from "lucide-react";
+import { Package, Plus, Pencil, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { EmptyState } from "@/components/empty-state";
 import { ProdutoImagem } from "@/components/produto-imagem";
+import { uploadImage } from "@/lib/supabase";
 import { brl, useStore, type Item } from "@/lib/store";
 
 export const Route = createFileRoute("/itens")({
@@ -70,7 +71,23 @@ function ItensPage() {
     setOpen(true);
   };
 
-  const submit = (e: React.FormEvent) => {
+  const [uploading, setUploading] = useState(false);
+
+  const handleFile = async (file: File | undefined) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadImage(file, "produtos");
+      setForm((f) => ({ ...f, imagem: url }));
+      toast.success("Imagem enviada.");
+    } catch {
+      toast.error("Falha ao enviar imagem.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const preco = Number(form.preco.replace(",", "."));
     if (!form.nome.trim()) {
@@ -81,21 +98,29 @@ function ItensPage() {
       toast.error("Informe um valor unitário válido.");
       return;
     }
-    saveItem({
-      nome: form.nome,
-      descricao: form.descricao,
-      imagem: form.imagem,
-      preco,
-      id: editing?.id,
-    });
-    toast.success(editing ? "Item atualizado com sucesso." : "Item cadastrado com sucesso.");
-    setOpen(false);
+    try {
+      await saveItem({
+        nome: form.nome,
+        descricao: form.descricao,
+        imagem: form.imagem,
+        preco,
+        id: editing?.id,
+      });
+      toast.success(editing ? "Item atualizado com sucesso." : "Item cadastrado com sucesso.");
+      setOpen(false);
+    } catch {
+      toast.error("Erro ao salvar item. Verifique a conexão.");
+    }
   };
 
-  const confirmarExclusao = () => {
+  const confirmarExclusao = async () => {
     if (!toDelete) return;
-    removeItem(toDelete.id);
-    toast.success("Item excluído.");
+    try {
+      await removeItem(toDelete.id);
+      toast.success("Item excluído.");
+    } catch {
+      toast.error("Erro ao excluir item.");
+    }
     setToDelete(null);
   };
 
@@ -161,14 +186,26 @@ function ItensPage() {
           </DialogHeader>
           <form onSubmit={submit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="imagem">URL da imagem</Label>
-              <Input
-                id="imagem"
-                value={form.imagem}
-                maxLength={500}
-                onChange={(e) => setForm({ ...form, imagem: e.target.value })}
-                placeholder="https://..."
-              />
+              <Label htmlFor="imagem">Imagem do produto</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="imagem"
+                  value={form.imagem}
+                  maxLength={500}
+                  onChange={(e) => setForm({ ...form, imagem: e.target.value })}
+                  placeholder="https://..."
+                />
+                <label className="inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-3 text-sm font-medium shadow-sm hover:bg-accent">
+                  <Upload className="size-4" />
+                  {uploading ? "Enviando..." : "Enviar"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleFile(e.target.files?.[0])}
+                  />
+                </label>
+              </div>
               <ProdutoImagem
                 src={form.imagem}
                 alt="Pré-visualização"

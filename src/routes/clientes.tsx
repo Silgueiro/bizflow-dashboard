@@ -68,21 +68,29 @@ function ClientesPage() {
     setOpen(true);
   };
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nome.trim()) {
       toast.error("Informe o nome do cliente.");
       return;
     }
-    saveCliente({ ...form, id: editing?.id });
-    toast.success(editing ? "Cliente atualizado com sucesso." : "Cliente cadastrado com sucesso.");
-    setOpen(false);
+    try {
+      await saveCliente({ ...form, id: editing?.id });
+      toast.success(editing ? "Cliente atualizado com sucesso." : "Cliente cadastrado com sucesso.");
+      setOpen(false);
+    } catch {
+      toast.error("Erro ao salvar cliente. Verifique a conexão.");
+    }
   };
 
-  const confirmarExclusao = () => {
+  const confirmarExclusao = async () => {
     if (!toDelete) return;
-    removeCliente(toDelete.id);
-    toast.success("Cliente excluído.");
+    try {
+      await removeCliente(toDelete.id);
+      toast.success("Cliente excluído.");
+    } catch {
+      toast.error("Erro ao excluir cliente.");
+    }
     setToDelete(null);
   };
 
