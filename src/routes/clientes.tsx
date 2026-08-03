@@ -289,3 +289,25 @@ function ClientesPage() {
     </div>
   );
 }
+// Função acionada quando o campo de CEP muda ou perde o foco (onBlur)
+const handleCepBlur = async (e) => {
+  const cep = e.target.value;
+  const dadosEndereco = await buscarCEP(cep);
+
+  if (dadosEndereco) {
+    // Atualiza os estados do seu formulário
+    setFormData((prev) => ({
+      ...prev,
+      address: `${dadosEndereco.logradouro}, - ${dadosEndereco.bairro}`,
+      city: dadosEndereco.cidade,
+      state: dadosEndereco.uf
+    }));
+  }
+};
+
+// No JSX do seu formulário:
+<input 
+  type="text" 
+  placeholder="CEP" 
+  onBlur={handleCepBlur} // Dispara a busca quando o usuário sai do campo
+/>
