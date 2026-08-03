@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Package, Plus, Pencil, Trash2, Upload, Search } from "lucide-react";
+import { Package, Plus, Pencil, Trash2, Upload, Globe } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -62,38 +62,71 @@ function ItensPage() {
   const abrirNovo = () => {
     setEditing(null);
     setForm(vazio);
+    resultadosRef.current = [];
+    idxRef.current = 0;
+    termoRef.current = "";
     setOpen(true);
   };
 
   const abrirEdicao = (i: Item) => {
     setEditing(i);
     setForm({ nome: i.nome, descricao: i.descricao, preco: String(i.preco), imagem: i.imagem, ncm: i.ncm });
+    resultadosRef.current = [];
+    idxRef.current = 0;
+    termoRef.current = "";
     setOpen(true);
   };
 
   const [uploading, setUploading] = useState(false);
   const [buscando, setBuscando] = useState(false);
+  const resultadosRef = useRef<string[]>([]);
+  const idxRef = useRef(0);
+  const termoRef = useRef("");
 
   const buscarImagem = async () => {
-    const termo = form.ncm.trim() || form.nome.trim();
+    const termo = form.nome.trim();
     if (!termo) {
-      toast.error("Informe o NCM ou o nome do produto para buscar a imagem.");
+      toast.error("Informe o nome do produto para buscar a imagem.");
       return;
     }
+
+    // Se o termo mudou, reinicia os resultados
+    if (termoRef.current !== termo) {
+      resultadosRef.current = [];
+      idxRef.current = 0;
+      termoRef.current = termo;
+    }
+
+    // Se ainda há resultados para percorrer, avança para o próximo
+    if (resultadosRef.current.length > idxRef.current + 1) {
+      idxRef.current += 1;
+      setForm((f) => ({ ...f, imagem: resultadosRef.current[idxRef.current] }));
+      toast.success(`Imagem ${idxRef.current + 1} de ${resultadosRef.current.length}.`);
+      return;
+    }
+
+    // Busca uma nova página de resultados
     setBuscando(true);
     try {
+      const pagina = Math.floor(idxRef.current / 20) + 1;
       const res = await fetch(
-        `https://api.openverse.org/v1/images/?q=${encodeURIComponent(termo)}&page_size=1`,
+        `https://api.openverse.org/v1/images/?q=${encodeURIComponent(termo)}&page=${pagina}&page_size=20`,
       );
       if (!res.ok) throw new Error("API error");
       const json = await res.json();
-      const url = json?.results?.[0]?.url;
-      if (!url) {
+      const urls: string[] = (json?.results ?? [])
+        .map((r: { url?: string }) => r.url)
+        .filter((u: string | undefined): u is string => !!u);
+      if (urls.length === 0) {
         toast.info("Nenhuma imagem encontrada para esse termo.");
         return;
       }
-      setForm((f) => ({ ...f, imagem: url }));
-      toast.success("Imagem encontrada e preenchida.");
+      // Acumula os resultados e posiciona no primeiro da nova página
+      const offset = resultadosRef.current.length;
+      resultadosRef.current = [...resultadosRef.current, ...urls];
+      idxRef.current = offset;
+      setForm((f) => ({ ...f, imagem: urls[0] }));
+      toast.success(`Imagem encontrada. Clique novamente para ver outras opções.`);
     } catch {
       toast.error("Não foi possível buscar a imagem. Verifique sua conexão.");
     } finally {
@@ -243,39 +276,39 @@ function ItensPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="item-nome">Nome do item</Label>
-              <Input
-                id="item-nome"
-                maxLength={120}
-                value={form.nome}
-                onChange={(e) => setForm({ ...form, nome: e.target.value })}
-                placeholder="Cadeira executiva"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="item-ncm">NCM (Nomenclatura Comum do Mercosul)</Label>
               <div className="flex gap-2">
                 <Input
-                  id="item-ncm"
-                  maxLength={10}
-                  value={form.ncm}
-                  onChange={(e) => setForm({ ...form, ncm: e.target.value.replace(/\D/g, "") })}
-                  inputMode="numeric"
-                  placeholder="9401.31.00"
+                  id="item-nome"
+                  maxLength={120}
+                  value={form.nome}
+                  onChange={(e) => setForm({ ...form, nome: e.target.value })}
+                  placeholder="Cadeira executiva"
                 />
                 <Button
                   type="button"
                   variant="outline"
                   className="shrink-0"
-                  disabled={buscando}
+                  disabled={buscando || !form.nome.trim()}
                   onClick={buscarImagem}
                 >
-                  <Search className="size-4" />
-                  {buscando ? "Buscando..." : "Buscar imagem"}
+                  <Globe className="size-4" />
+                  {buscando ? "Buscando..." : "Buscar na web"}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Busca uma foto representativa pelo NCM ou nome do produto.
+                Busca uma foto do produto pelo nome. Clique novamente para ver outras opções.
               </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="item-ncm">NCM (Nomenclatura Comum do Mercosul)</Label>
+              <Input
+                id="item-ncm"
+                maxLength={10}
+                value={form.ncm}
+                onChange={(e) => setForm({ ...form, ncm: e.target.value.replace(/\D/g, "") })}
+                inputMode="numeric"
+                placeholder="9401.31.00"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="item-desc">Descrição detalhada</Label>
