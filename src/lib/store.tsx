@@ -32,6 +32,15 @@ export type OrcamentoItem = {
 
 export type StatusOrcamento = "Pendente" | "Aprovado" | "Recusado";
 
+export type Empresa = {
+  nome: string;
+  documento: string;
+  telefone: string;
+  email: string;
+  endereco: string;
+  logo: string;
+};
+
 export type Orcamento = {
   id: string;
   numero: number;
@@ -47,9 +56,19 @@ type Data = {
   clientes: Cliente[];
   itens: Item[];
   orcamentos: Orcamento[];
+  empresa: Empresa;
 };
 
-const EMPTY: Data = { clientes: [], itens: [], orcamentos: [] };
+export const EMPRESA_VAZIA: Empresa = {
+  nome: "",
+  documento: "",
+  telefone: "",
+  email: "",
+  endereco: "",
+  logo: "",
+};
+
+const EMPTY: Data = { clientes: [], itens: [], orcamentos: [], empresa: EMPRESA_VAZIA };
 const KEY = "orcafacil.data.v1";
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
@@ -59,6 +78,8 @@ type Ctx = {
   clientes: Cliente[];
   itens: Item[];
   orcamentos: Orcamento[];
+  empresa: Empresa;
+  saveEmpresa: (e: Empresa) => void;
   saveCliente: (c: Omit<Cliente, "id"> & { id?: string | undefined }) => void;
   removeCliente: (id: string) => void;
   saveItem: (i: Omit<Item, "id"> & { id?: string | undefined }) => void;
@@ -141,10 +162,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const saveEmpresa = useCallback((e: Empresa) => {
+    setData((d) => ({ ...d, empresa: e }));
+  }, []);
+
   const value = useMemo(
     () => ({
       ready,
       ...data,
+      saveEmpresa,
       saveCliente,
       removeCliente,
       saveItem,
@@ -156,6 +182,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [
       ready,
       data,
+      saveEmpresa,
       saveCliente,
       removeCliente,
       saveItem,

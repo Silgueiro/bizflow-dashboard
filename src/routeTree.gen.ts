@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ClientesRouteImport } from './routes/clientes'
+import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
 import { Route as ItensRouteImport } from './routes/itens'
 import { Route as OrcamentosRouteImport } from './routes/orcamentos'
 import { Route as OrcamentoIdRouteImport } from './routes/orcamento.$id'
@@ -23,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
 const ClientesRoute = ClientesRouteImport.update({
   id: '/clientes',
   path: '/clientes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfiguracoesRoute = ConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ItensRoute = ItensRouteImport.update({
@@ -44,6 +50,7 @@ const OrcamentoIdRoute = OrcamentoIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
+  '/configuracoes': typeof ConfiguracoesRoute
   '/itens': typeof ItensRoute
   '/orcamentos': typeof OrcamentosRoute
   '/orcamento/$id': typeof OrcamentoIdRoute
@@ -51,6 +58,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
+  '/configuracoes': typeof ConfiguracoesRoute
   '/itens': typeof ItensRoute
   '/orcamentos': typeof OrcamentosRoute
   '/orcamento/$id': typeof OrcamentoIdRoute
@@ -59,22 +67,42 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
+  '/configuracoes': typeof ConfiguracoesRoute
   '/itens': typeof ItensRoute
   '/orcamentos': typeof OrcamentosRoute
   '/orcamento/$id': typeof OrcamentoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/clientes' | '/itens' | '/orcamentos' | '/orcamento/$id'
+  fullPaths:
+    | '/'
+    | '/clientes'
+    | '/configuracoes'
+    | '/itens'
+    | '/orcamentos'
+    | '/orcamento/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/clientes' | '/itens' | '/orcamentos' | '/orcamento/$id'
+  to:
+    | '/'
+    | '/clientes'
+    | '/configuracoes'
+    | '/itens'
+    | '/orcamentos'
+    | '/orcamento/$id'
   id:
-    '__root__' | '/' | '/clientes' | '/itens' | '/orcamentos' | '/orcamento/$id'
+    | '__root__'
+    | '/'
+    | '/clientes'
+    | '/configuracoes'
+    | '/itens'
+    | '/orcamentos'
+    | '/orcamento/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ClientesRoute: typeof ClientesRoute
+  ConfiguracoesRoute: typeof ConfiguracoesRoute
   ItensRoute: typeof ItensRoute
   OrcamentosRoute: typeof OrcamentosRoute
   OrcamentoIdRoute: typeof OrcamentoIdRoute
@@ -94,6 +122,13 @@ declare module '@tanstack/react-router' {
       path: '/clientes'
       fullPath: '/clientes'
       preLoaderRoute: typeof ClientesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/configuracoes': {
+      id: '/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/configuracoes'
+      preLoaderRoute: typeof ConfiguracoesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/itens': {
@@ -123,6 +158,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ClientesRoute: ClientesRoute,
+  ConfiguracoesRoute: ConfiguracoesRoute,
   ItensRoute: ItensRoute,
   OrcamentosRoute: OrcamentosRoute,
   OrcamentoIdRoute: OrcamentoIdRoute,
