@@ -29,7 +29,7 @@ export const Route = createFileRoute("/orcamento/$id")({
 
 function DocumentoOrcamento() {
   const { id } = Route.useParams();
-  const { orcamentos, clientes, itens, ready } = useStore();
+  const { orcamentos, clientes, itens, empresa, ready } = useStore();
 
   const orcamento = orcamentos.find((o) => o.id === id);
 
@@ -72,6 +72,27 @@ function DocumentoOrcamento() {
       </div>
 
       <article className="print-area rounded-xl border border-border bg-card p-6 shadow-sm md:p-10">
+        {(empresa?.nome || empresa?.logo) && (
+          <div className="mb-6 flex flex-wrap items-start gap-4 border-b border-border pb-6">
+            {empresa.logo && (
+              <ProdutoImagem
+                src={empresa.logo}
+                alt={`Logo ${empresa.nome || "da empresa"}`}
+                className="size-20 shrink-0 rounded-md border border-border bg-background"
+              />
+            )}
+            <div className="min-w-[180px] flex-1">
+              {empresa.nome && <p className="text-lg font-semibold">{empresa.nome}</p>}
+              <div className="mt-1 space-y-0.5 text-sm text-muted-foreground">
+                {empresa.documento && <p>CNPJ/CPF: {empresa.documento}</p>}
+                {empresa.endereco && <p>{empresa.endereco}</p>}
+                {(empresa.telefone || empresa.email) && (
+                  <p>{[empresa.telefone, empresa.email].filter(Boolean).join(" • ")}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
         <header className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-6">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-primary">
