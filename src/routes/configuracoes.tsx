@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ProdutoImagem } from "@/components/produto-imagem";
 import { uploadImage } from "@/lib/supabase";
 import { EMPRESA_VAZIA, useStore, type Empresa } from "@/lib/store";
-import { maskDocumento, validarDocumento } from "@/lib/documento";
+import { maskDocumento, maskTelefone, validarDocumento } from "@/lib/documento";
 
 export const Route = createFileRoute("/configuracoes")({
   head: () => ({
@@ -127,11 +127,23 @@ function ConfiguracoesPage() {
             )}
           </div>
           <div className="space-y-2">
+            <Label htmlFor="ie">Inscrição Estadual (IE)</Label>
+            <Input
+              id="ie"
+              value={form.ie}
+              maxLength={20}
+              onChange={(e) => set("ie")(e.target.value)}
+              placeholder="123.456.789.012"
+            />
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="telefone">Telefone / WhatsApp</Label>
             <Input
               id="telefone"
+              maxLength={15}
               value={form.telefone}
-              onChange={(e) => set("telefone")(e.target.value)}
+              onChange={(e) => set("telefone")(maskTelefone(e.target.value))}
+              inputMode="numeric"
               placeholder="(11) 99999-0000"
             />
           </div>

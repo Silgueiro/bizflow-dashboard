@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Package, Plus, Pencil, Trash2, Upload } from "lucide-react";
+import { Package, Plus, Pencil, Trash2, Upload, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -50,7 +50,7 @@ export const Route = createFileRoute("/itens")({
   component: ItensPage,
 });
 
-const vazio = { nome: "", descricao: "", preco: "", imagem: "" };
+const vazio = { nome: "", descricao: "", preco: "", imagem: "", ncm: "" };
 
 function ItensPage() {
   const { itens, saveItem, removeItem } = useStore();
@@ -67,11 +67,39 @@ function ItensPage() {
 
   const abrirEdicao = (i: Item) => {
     setEditing(i);
-    setForm({ nome: i.nome, descricao: i.descricao, preco: String(i.preco), imagem: i.imagem });
+    setForm({ nome: i.nome, descricao: i.descricao, preco: String(i.preco), imagem: i.imagem, ncm: i.ncm });
     setOpen(true);
   };
 
   const [uploading, setUploading] = useState(false);
+  const [buscando, setBuscando] = useState(false);
+
+  const buscarImagem = async () => {
+    const termo = form.ncm.trim() || form.nome.trim();
+    if (!termo) {
+      toast.error("Informe o NCM ou o nome do produto para buscar a imagem.");
+      return;
+    }
+    setBuscando(true);
+    try {
+      const res = await fetch(
+        `https://api.openverse.org/v1/images/?q=${encodeURIComponent(termo)}&page_size=1`,
+      );
+      if (!res.ok) throw new Error("API error");
+      const json = await res.json();
+      const url = json?.results?.[0]?.url;
+      if (!url) {
+        toast.info("Nenhuma imagem encontrada para esse termo.");
+        return;
+      }
+      setForm((f) => ({ ...f, imagem: url }));
+      toast.success("Imagem encontrada e preenchida.");
+    } catch {
+      toast.error("Não foi possível buscar a imagem. Verifique sua conexão.");
+    } finally {
+      setBuscando(false);
+    }
+  };
 
   const handleFile = async (file: File | undefined) => {
     if (!file) return;
@@ -103,6 +131,7 @@ function ItensPage() {
         nome: form.nome,
         descricao: form.descricao,
         imagem: form.imagem,
+        ncm: form.ncm,
         preco,
         id: editing?.id,
       });
@@ -221,6 +250,32 @@ function ItensPage() {
                 onChange={(e) => setForm({ ...form, nome: e.target.value })}
                 placeholder="Cadeira executiva"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="item-ncm">NCM (Nomenclatura Comum do Mercosul)</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="item-ncm"
+                  maxLength={10}
+                  value={form.ncm}
+                  onChange={(e) => setForm({ ...form, ncm: e.target.value.replace(/\D/g, "") })}
+                  inputMode="numeric"
+                  placeholder="9401.31.00"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="shrink-0"
+                  disabled={buscando}
+                  onClick={buscarImagem}
+                >
+                  <Search className="size-4" />
+                  {buscando ? "Buscando..." : "Buscar imagem"}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Busca uma foto representativa pelo NCM ou nome do produto.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="item-desc">Descrição detalhada</Label>

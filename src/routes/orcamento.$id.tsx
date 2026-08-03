@@ -85,6 +85,7 @@ function DocumentoOrcamento() {
               {empresa.nome && <p className="text-lg font-semibold">{empresa.nome}</p>}
               <div className="mt-1 space-y-0.5 text-sm text-muted-foreground">
                 {empresa.documento && <p>CNPJ/CPF: {empresa.documento}</p>}
+                {empresa.ie && <p>IE: {empresa.ie}</p>}
                 {empresa.endereco && <p>{empresa.endereco}</p>}
                 {(empresa.telefone || empresa.email) && (
                   <p>{[empresa.telefone, empresa.email].filter(Boolean).join(" • ")}</p>
@@ -129,6 +130,13 @@ function DocumentoOrcamento() {
             {cliente?.email && <p>{cliente.email}</p>}
             {cliente?.telefone && <p>{cliente.telefone}</p>}
             {cliente?.endereco && <p>{cliente.endereco}</p>}
+            {(cliente?.cnpj || cliente?.ie) && (
+              <p>
+                {cliente.cnpj && <span>CNPJ: {cliente.cnpj}</span>}
+                {cliente.cnpj && cliente.ie && " • "}
+                {cliente.ie && <span>IE: {cliente.ie}</span>}
+              </p>
+            )}
           </div>
         </section>
 
@@ -176,6 +184,14 @@ function DocumentoOrcamento() {
             </p>
           </section>
         )}
+
+        <footer className="mt-8 border-t border-border pt-4 text-center text-xs text-muted-foreground">
+          {empresa.nome && <p className="font-medium">{empresa.nome}</p>}
+          {empresa.documento && <span>CNPJ: {empresa.documento}</span>}
+          {empresa.ie && <span> • IE: {empresa.ie}</span>}
+          {empresa.telefone && <span> • {empresa.telefone}</span>}
+          {empresa.email && <span> • {empresa.email}</span>}
+        </footer>
       </article>
     </div>
   );

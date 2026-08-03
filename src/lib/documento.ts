@@ -2,6 +2,16 @@
 
 export const somenteDigitos = (v: string) => v.replace(/\D/g, "");
 
+/** Máscara dinâmica de telefone: (99) 9999-9999 (fixo) ou (99) 99999-9999 (celular). */
+export function maskTelefone(valor: string) {
+  const d = somenteDigitos(valor).slice(0, 11);
+  if (d.length <= 2) return d;
+  if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+  if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+}
+
 export function maskDocumento(valor: string) {
   const d = somenteDigitos(valor).slice(0, 14);
   if (d.length <= 11) {

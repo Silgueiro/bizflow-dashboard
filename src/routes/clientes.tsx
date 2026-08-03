@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { EmptyState } from "@/components/empty-state";
 import { useStore, type Cliente } from "@/lib/store";
+import { maskDocumento, maskTelefone, validarDocumento } from "@/lib/documento";
 
 export const Route = createFileRoute("/clientes")({
   head: () => ({
@@ -47,7 +48,7 @@ export const Route = createFileRoute("/clientes")({
   component: ClientesPage,
 });
 
-const vazio = { nome: "", email: "", telefone: "", endereco: "", observacoes: "" };
+const vazio = { nome: "", email: "", telefone: "", endereco: "", observacoes: "", cnpj: "", ie: "" };
 
 function ClientesPage() {
   const { clientes, saveCliente, removeCliente } = useStore();
@@ -157,6 +158,12 @@ function ClientesPage() {
                       <span className="truncate">{c.telefone}</span>
                     </div>
                   )}
+                  {(c.cnpj || c.ie) && (
+                    <div className="flex min-w-0 gap-3 text-xs text-muted-foreground">
+                      {c.cnpj && <span>CNPJ: {c.cnpj}</span>}
+                      {c.ie && <span>IE: {c.ie}</span>}
+                    </div>
+                  )}
                   {c.endereco && (
                     <div className="flex min-w-0 items-center gap-2">
                       <MapPin className="size-3.5 shrink-0" />
@@ -189,6 +196,29 @@ function ClientesPage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
+                <Label htmlFor="cnpj">CNPJ / CPF</Label>
+                <Input
+                  id="cnpj"
+                  value={form.cnpj}
+                  onChange={(e) => setForm({ ...form, cnpj: maskDocumento(e.target.value) })}
+                  inputMode="numeric"
+                  maxLength={18}
+                  placeholder="00.000.000/0001-00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ie">Inscrição Estadual (IE)</Label>
+                <Input
+                  id="ie"
+                  value={form.ie}
+                  maxLength={20}
+                  onChange={(e) => setForm({ ...form, ie: e.target.value })}
+                  placeholder="123.456.789.012"
+                />
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
                 <Label htmlFor="email">E-mail</Label>
                 <Input
                   id="email"
@@ -203,9 +233,10 @@ function ClientesPage() {
                 <Label htmlFor="telefone">Telefone</Label>
                 <Input
                   id="telefone"
-                  maxLength={40}
+                  maxLength={15}
                   value={form.telefone}
-                  onChange={(e) => setForm({ ...form, telefone: e.target.value })}
+                  onChange={(e) => setForm({ ...form, telefone: maskTelefone(e.target.value) })}
+                  inputMode="numeric"
                   placeholder="(11) 99999-0000"
                 />
               </div>

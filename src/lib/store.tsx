@@ -16,6 +16,8 @@ export type Cliente = {
   telefone: string;
   endereco: string;
   observacoes: string;
+  cnpj: string;
+  ie: string;
 };
 
 export type Item = {
@@ -24,6 +26,7 @@ export type Item = {
   descricao: string;
   preco: number;
   imagem: string;
+  ncm: string;
 };
 
 export type OrcamentoItem = {
@@ -37,6 +40,7 @@ export type Empresa = {
   id?: string;
   nome: string;
   documento: string;
+  ie: string;
   telefone: string;
   email: string;
   endereco: string;
@@ -75,6 +79,7 @@ type Ctx = {
 export const EMPRESA_VAZIA: Empresa = {
   nome: "",
   documento: "",
+  ie: "",
   telefone: "",
   email: "",
   endereco: "",
@@ -84,8 +89,8 @@ export const EMPRESA_VAZIA: Empresa = {
 const StoreContext = createContext<Ctx | null>(null);
 
 // ---- DB row types ----
-type ClientRow = { id: string; name: string; email: string; phone: string; address: string; notes: string };
-type ProductRow = { id: string; name: string; description: string; price: number; image_url: string };
+type ClientRow = { id: string; name: string; email: string; phone: string; address: string; notes: string; cnpj: string; ie: string };
+type ProductRow = { id: string; name: string; description: string; price: number; image_url: string; ncm: string };
 type QuoteRow = {
   id: string;
   numero: number;
@@ -101,6 +106,7 @@ type CompanyRow = {
   id: string;
   company_name: string;
   cnpj: string;
+  ie: string;
   phone: string;
   email: string;
   address: string;
@@ -114,6 +120,8 @@ const mapClient = (r: ClientRow): Cliente => ({
   telefone: r.phone ?? "",
   endereco: r.address ?? "",
   observacoes: r.notes ?? "",
+  cnpj: r.cnpj ?? "",
+  ie: r.ie ?? "",
 });
 
 const mapProduct = (r: ProductRow): Item => ({
@@ -122,6 +130,7 @@ const mapProduct = (r: ProductRow): Item => ({
   descricao: r.description ?? "",
   preco: Number(r.price) ?? 0,
   imagem: r.image_url ?? "",
+  ncm: r.ncm ?? "",
 });
 
 const mapQuote = (r: QuoteRow): Orcamento => ({
@@ -139,6 +148,7 @@ const mapCompany = (r: CompanyRow): Empresa => ({
   id: r.id,
   nome: r.company_name ?? "",
   documento: r.cnpj ?? "",
+  ie: r.ie ?? "",
   telefone: r.phone ?? "",
   email: r.email ?? "",
   endereco: r.address ?? "",
@@ -177,6 +187,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const row = {
       company_name: e.nome,
       cnpj: e.documento,
+      ie: e.ie,
       phone: e.telefone,
       email: e.email,
       address: e.endereco,
@@ -209,6 +220,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       phone: c.telefone,
       address: c.endereco,
       notes: c.observacoes,
+      cnpj: c.cnpj,
+      ie: c.ie,
     };
     if (c.id) {
       const { data, error } = await supabase
@@ -239,6 +252,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       description: i.descricao,
       price: i.preco,
       image_url: i.imagem,
+      ncm: i.ncm,
     };
     if (i.id) {
       const { data, error } = await supabase
