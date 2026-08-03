@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Package, Plus, Pencil, Trash2, ImageIcon } from "lucide-react";
+import { Package, Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { EmptyState } from "@/components/empty-state";
+import { ProdutoImagem } from "@/components/produto-imagem";
 import { brl, useStore, type Item } from "@/lib/store";
 
 export const Route = createFileRoute("/itens")({
@@ -50,26 +51,6 @@ export const Route = createFileRoute("/itens")({
 
 const vazio = { nome: "", descricao: "", preco: "", imagem: "" };
 
-export function ProdutoImagem({ src, alt, className }: { src: string; alt: string; className?: string }) {
-  const [erro, setErro] = useState(false);
-  if (!src || erro) {
-    return (
-      <div className={`grid place-items-center bg-muted text-muted-foreground ${className ?? ""}`}>
-        <ImageIcon className="size-6" />
-      </div>
-    );
-  }
-  return (
-    <img
-      src={src}
-      alt={alt}
-      loading="lazy"
-      onError={() => setErro(true)}
-      className={`object-cover ${className ?? ""}`}
-    />
-  );
-}
-
 function ItensPage() {
   const { itens, saveItem, removeItem } = useStore();
   const [open, setOpen] = useState(false);
@@ -92,8 +73,14 @@ function ItensPage() {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const preco = Number(form.preco.replace(",", "."));
-    if (!form.nome.trim()) return toast.error("Informe o nome do item.");
-    if (!Number.isFinite(preco) || preco < 0) return toast.error("Informe um valor unitário válido.");
+    if (!form.nome.trim()) {
+      toast.error("Informe o nome do item.");
+      return;
+    }
+    if (!Number.isFinite(preco) || preco < 0) {
+      toast.error("Informe um valor unitário válido.");
+      return;
+    }
     saveItem({
       nome: form.nome,
       descricao: form.descricao,
