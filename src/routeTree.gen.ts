@@ -10,33 +10,74 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ClientesRouteImport } from './routes/clientes'
+import { Route as ItensRouteImport } from './routes/itens'
+import { Route as OrcamentosRouteImport } from './routes/orcamentos'
+import { Route as OrcamentoIdRouteImport } from './routes/orcamento.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClientesRoute = ClientesRouteImport.update({
+  id: '/clientes',
+  path: '/clientes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ItensRoute = ItensRouteImport.update({
+  id: '/itens',
+  path: '/itens',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrcamentosRoute = OrcamentosRouteImport.update({
+  id: '/orcamentos',
+  path: '/orcamentos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrcamentoIdRoute = OrcamentoIdRouteImport.update({
+  id: '/orcamento/$id',
+  path: '/orcamento/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/clientes': typeof ClientesRoute
+  '/itens': typeof ItensRoute
+  '/orcamentos': typeof OrcamentosRoute
+  '/orcamento/$id': typeof OrcamentoIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/clientes': typeof ClientesRoute
+  '/itens': typeof ItensRoute
+  '/orcamentos': typeof OrcamentosRoute
+  '/orcamento/$id': typeof OrcamentoIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/clientes': typeof ClientesRoute
+  '/itens': typeof ItensRoute
+  '/orcamentos': typeof OrcamentosRoute
+  '/orcamento/$id': typeof OrcamentoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/clientes' | '/itens' | '/orcamentos' | '/orcamento/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/clientes' | '/itens' | '/orcamentos' | '/orcamento/$id'
+  id:
+    '__root__' | '/' | '/clientes' | '/itens' | '/orcamentos' | '/orcamento/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ClientesRoute: typeof ClientesRoute
+  ItensRoute: typeof ItensRoute
+  OrcamentosRoute: typeof OrcamentosRoute
+  OrcamentoIdRoute: typeof OrcamentoIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,22 +89,44 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/clientes': {
+      id: '/clientes'
+      path: '/clientes'
+      fullPath: '/clientes'
+      preLoaderRoute: typeof ClientesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/itens': {
+      id: '/itens'
+      path: '/itens'
+      fullPath: '/itens'
+      preLoaderRoute: typeof ItensRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/orcamentos': {
+      id: '/orcamentos'
+      path: '/orcamentos'
+      fullPath: '/orcamentos'
+      preLoaderRoute: typeof OrcamentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/orcamento/$id': {
+      id: '/orcamento/$id'
+      path: '/orcamento/$id'
+      fullPath: '/orcamento/$id'
+      preLoaderRoute: typeof OrcamentoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ClientesRoute: ClientesRoute,
+  ItensRoute: ItensRoute,
+  OrcamentosRoute: OrcamentosRoute,
+  OrcamentoIdRoute: OrcamentoIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
