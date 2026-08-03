@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ProdutoImagem } from "@/components/produto-imagem";
 import { EMPRESA_VAZIA, useStore, type Empresa } from "@/lib/store";
+import { maskDocumento, validarDocumento } from "@/lib/documento";
 
 export const Route = createFileRoute("/configuracoes")({
   head: () => ({
@@ -34,12 +35,14 @@ export const Route = createFileRoute("/configuracoes")({
 function ConfiguracoesPage() {
   const { empresa, saveEmpresa, ready } = useStore();
   const [form, setForm] = useState<Empresa>(EMPRESA_VAZIA);
+  const [erroDoc, setErroDoc] = useState<string | null>(null);
 
   useEffect(() => {
     if (ready) setForm(empresa ?? EMPRESA_VAZIA);
   }, [ready, empresa]);
 
   const set = (k: keyof Empresa) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const docErro = erroDoc;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -59,6 +62,12 @@ function ConfiguracoesPage() {
         className="space-y-5 rounded-xl border border-border bg-card p-6 shadow-sm"
         onSubmit={(e) => {
           e.preventDefault();
+          const erro = validarDocumento(form.documento);
+          setErroDoc(erro);
+          if (erro) {
+            toast.error(erro);
+            return;
+          }
           saveEmpresa(form);
           toast.success("Dados da empresa salvos");
         }}
@@ -79,9 +88,23 @@ function ConfiguracoesPage() {
             <Input
               id="documento"
               value={form.documento}
-              onChange={(e) => set("documento")(e.target.value)}
+              onChange={(e) => {
+                const v = maskDocumento(e.target.value);
+                set("documento")(v);
+                if (erroDoc) setErroDoc(validarDocumento(v));
+              }}
+              onBlur={(e) => setErroDoc(validarDocumento(e.target.value))}
+              inputMode="numeric"
+              maxLength={18}
+              aria-invalid={docErro ? true : undefined}
+              aria-describedby={docErro ? "documento-erro" : undefined}
               placeholder="00.000.000/0001-00"
             />
+            {docErro && (
+              <p id="documento-erro" className="text-sm text-destructive">
+                {docErro}
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="telefone">Telefone / WhatsApp</Label>
