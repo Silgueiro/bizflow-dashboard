@@ -14,12 +14,12 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const items = [
+const items: { title: string; url: string; icon: typeof Users; exact?: boolean }[] = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard, exact: true },
   { title: "Clientes", url: "/clientes", icon: Users },
   { title: "Itens / Produtos", url: "/itens", icon: Package },
   { title: "Orçamentos", url: "/orcamentos", icon: FileText },
-] as const;
+];
 
 export function AppSidebar() {
   const { state } = useSidebar();
