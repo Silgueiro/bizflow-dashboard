@@ -59,11 +59,11 @@ type Ctx = {
   clientes: Cliente[];
   itens: Item[];
   orcamentos: Orcamento[];
-  saveCliente: (c: Omit<Cliente, "id"> & { id?: string }) => void;
+  saveCliente: (c: Omit<Cliente, "id"> & { id?: string | undefined }) => void;
   removeCliente: (id: string) => void;
-  saveItem: (i: Omit<Item, "id"> & { id?: string }) => void;
+  saveItem: (i: Omit<Item, "id"> & { id?: string | undefined }) => void;
   removeItem: (id: string) => void;
-  saveOrcamento: (o: Omit<Orcamento, "id" | "numero"> & { id?: string; numero?: number }) => string;
+  saveOrcamento: (o: Omit<Orcamento, "id" | "numero"> & { id?: string | undefined; numero?: number | undefined }) => string;
   removeOrcamento: (id: string) => void;
   setStatus: (id: string, status: StatusOrcamento) => void;
 };
