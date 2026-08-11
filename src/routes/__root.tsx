@@ -128,30 +128,40 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (r) => r.location.pathname });
+  const isLoginPage = pathname === "/login";
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <AuthGate>
           <StoreProvider>
-            <SidebarProvider>
-              <div className="flex min-h-screen w-full bg-background">
-                <AppSidebar />
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <header className="no-print sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-border bg-card/80 px-3 backdrop-blur">
-                    <SidebarTrigger />
-                    <span className="truncate text-sm font-medium text-muted-foreground">
-                      Painel administrativo
-                    </span>
-                  </header>
-                  <main className="flex-1 p-4 md:p-8">
-                    {/* Required: nested routes render here. */}
-                    <Outlet />
-                  </main>
+            {isLoginPage ? (
+              // Se for a rota /login, renderiza direto o formulário sem o menu lateral
+              <main className="min-h-screen w-full bg-background">
+                <Outlet />
+                <Toaster richColors position="top-right" />
+              </main>
+            ) : (
+              // Se for qualquer outra rota protegida, renderiza o layout com o menu lateral
+              <SidebarProvider>
+                <div className="flex min-h-screen w-full bg-background">
+                  <AppSidebar />
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <header className="no-print sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-border bg-card/80 px-3 backdrop-blur">
+                      <SidebarTrigger />
+                      <span className="truncate text-sm font-medium text-muted-foreground">
+                        Painel administrativo
+                      </span>
+                    </header>
+                    <main className="flex-1 p-4 md:p-8">
+                      <Outlet />
+                    </main>
+                  </div>
                 </div>
-              </div>
-            </SidebarProvider>
-            <Toaster richColors position="top-right" />
+                <Toaster richColors position="top-right" />
+              </SidebarProvider>
+            )}
           </StoreProvider>
         </AuthGate>
       </AuthProvider>
@@ -166,14 +176,19 @@ function AuthGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (loading) return;
+
+    // Se não estiver logado e não for a página de login, redireciona para o /login
     if (!session && pathname !== "/login") {
       router.navigate({ to: "/login" });
     }
+
+    // Se já estiver logado e tentar entrar no /login, redireciona para a home /
     if (session && pathname === "/login") {
       router.navigate({ to: "/" });
     }
   }, [session, loading, pathname, router]);
 
+  // Se estiver verificando a sessão inicialmente, exibe o indicador de carregamento
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -182,16 +197,6 @@ function AuthGate({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!session) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-center">
-          <Loader2 className="mx-auto size-8 animate-spin text-muted-foreground" />
-          <p className="mt-4 text-sm text-muted-foreground">Redirecionando para o login...</p>
-        </div>
-      </div>
-    );
-  }
-
+  // Libera a renderização da aplicação/página
   return <>{children}</>;
 }
