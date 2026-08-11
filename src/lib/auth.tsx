@@ -24,18 +24,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoading(false);
-    });
+    let isMounted = true;
+
+    // Trava de segurança: garante que o estado de carregamento termina em no máximo 1.5s
+    const timer = setTimeout(() => {
+      if (isMounted) setLoading(false);
+    }, 1500);
+
+    async function initAuth() {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (isMounted) {
+          setSession(data.session);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar sessão do Supabase:", err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+          clearTimeout(timer);
+        }
+      }
+    }
+
+    initAuth();
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
-      (async () => {
+      if (isMounted) {
         setSession(s);
-      })();
+        setLoading(false);
+      }
     });
 
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
