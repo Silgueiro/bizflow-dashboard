@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Users, Plus, Pencil, Trash2, Mail, Phone, MapPin } from "lucide-react";
 import { toast } from "sonner";
@@ -27,6 +27,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { EmptyState } from "@/components/empty-state";
+import { CepInput } from "@/components/cep-input";
 import { useStore, type Cliente } from "@/lib/store";
 import { maskDocumento, maskTelefone, validarDocumento } from "@/lib/documento";
 
@@ -48,7 +49,22 @@ export const Route = createFileRoute("/clientes")({
   component: ClientesPage,
 });
 
-const vazio = { nome: "", email: "", telefone: "", endereco: "", observacoes: "", cnpj: "", ie: "" };
+const vazio = {
+  nome: "",
+  email: "",
+  telefone: "",
+  endereco: "",
+  observacoes: "",
+  cnpj: "",
+  ie: "",
+  cep: "",
+  logradouro: "",
+  number: "",
+  complement: "",
+  neighborhood: "",
+  city: "",
+  state: "",
+};
 
 function ClientesPage() {
   const { clientes, saveCliente, removeCliente } = useStore();
@@ -56,6 +72,7 @@ function ClientesPage() {
   const [editing, setEditing] = useState<Cliente | null>(null);
   const [form, setForm] = useState(vazio);
   const [toDelete, setToDelete] = useState<Cliente | null>(null);
+  const numeroRef = useRef<HTMLInputElement | null>(null);
 
   const abrirNovo = () => {
     setEditing(null);
@@ -241,15 +258,82 @@ function ClientesPage() {
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="endereco">Endereço</Label>
-              <Input
-                id="endereco"
-                maxLength={200}
-                value={form.endereco}
-                onChange={(e) => setForm({ ...form, endereco: e.target.value })}
-                placeholder="Rua das Flores, 100 — São Paulo/SP"
+            <div className="grid gap-4 sm:grid-cols-2">
+              <CepInput
+                value={form.cep}
+                onChange={(cep) => setForm((f) => ({ ...f, cep }))}
+                onResult={(addr) =>
+                  setForm((f) => ({
+                    ...f,
+                    logradouro: addr.logradouro ?? f.logradouro,
+                    neighborhood: addr.neighborhood ?? f.neighborhood,
+                    city: addr.city ?? f.city,
+                    state: addr.state ?? f.state,
+                  }))
+                }
+                numeroRef={numeroRef}
               />
+              <div className="space-y-2">
+                <Label htmlFor="logradouro">Logradouro</Label>
+                <Input
+                  id="logradouro"
+                  maxLength={120}
+                  value={form.logradouro}
+                  onChange={(e) => setForm({ ...form, logradouro: e.target.value })}
+                  placeholder="Rua das Flores"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="number">Número</Label>
+                <Input
+                  id="number"
+                  ref={numeroRef}
+                  maxLength={20}
+                  value={form.number}
+                  onChange={(e) => setForm({ ...form, number: e.target.value })}
+                  placeholder="100"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="complement">Complemento</Label>
+                <Input
+                  id="complement"
+                  maxLength={60}
+                  value={form.complement}
+                  onChange={(e) => setForm({ ...form, complement: e.target.value })}
+                  placeholder="Apto 42"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="neighborhood">Bairro</Label>
+                <Input
+                  id="neighborhood"
+                  maxLength={80}
+                  value={form.neighborhood}
+                  onChange={(e) => setForm({ ...form, neighborhood: e.target.value })}
+                  placeholder="Centro"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="city">Cidade</Label>
+                <Input
+                  id="city"
+                  maxLength={80}
+                  value={form.city}
+                  onChange={(e) => setForm({ ...form, city: e.target.value })}
+                  placeholder="São Paulo"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="state">Estado (UF)</Label>
+                <Input
+                  id="state"
+                  maxLength={2}
+                  value={form.state}
+                  onChange={(e) => setForm({ ...form, state: e.target.value.toUpperCase().slice(0, 2) })}
+                  placeholder="SP"
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="obs">Observações</Label>
@@ -289,25 +373,3 @@ function ClientesPage() {
     </div>
   );
 }
-// Função acionada quando o campo de CEP muda ou perde o foco (onBlur)
-const handleCepBlur = async (e) => {
-  const cep = e.target.value;
-  const dadosEndereco = await buscarCEP(cep);
-
-  if (dadosEndereco) {
-    // Atualiza os estados do seu formulário
-    setFormData((prev) => ({
-      ...prev,
-      address: `${dadosEndereco.logradouro}, - ${dadosEndereco.bairro}`,
-      city: dadosEndereco.cidade,
-      state: dadosEndereco.uf
-    }));
-  }
-};
-
-// No JSX do seu formulário:
-<input 
-  type="text" 
-  placeholder="CEP" 
-  onBlur={handleCepBlur} // Dispara a busca quando o usuário sai do campo
-/>

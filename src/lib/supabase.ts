@@ -8,7 +8,7 @@ if (!url || !anonKey) {
 }
 
 export const supabase = createClient(url, anonKey, {
-  auth: { persistSession: false },
+  auth: { persistSession: true },
 });
 
 export const STORAGE_BUCKET = "imagens";

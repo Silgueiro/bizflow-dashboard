@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
 import { Route as ItensRouteImport } from './routes/itens'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as OrcamentosRouteImport } from './routes/orcamentos'
 import { Route as OrcamentoIdRouteImport } from './routes/orcamento.$id'
 
@@ -36,6 +37,11 @@ const ItensRoute = ItensRouteImport.update({
   path: '/itens',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OrcamentosRoute = OrcamentosRouteImport.update({
   id: '/orcamentos',
   path: '/orcamentos',
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/clientes': typeof ClientesRoute
   '/configuracoes': typeof ConfiguracoesRoute
   '/itens': typeof ItensRoute
+  '/login': typeof LoginRoute
   '/orcamentos': typeof OrcamentosRoute
   '/orcamento/$id': typeof OrcamentoIdRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/clientes': typeof ClientesRoute
   '/configuracoes': typeof ConfiguracoesRoute
   '/itens': typeof ItensRoute
+  '/login': typeof LoginRoute
   '/orcamentos': typeof OrcamentosRoute
   '/orcamento/$id': typeof OrcamentoIdRoute
 }
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/clientes': typeof ClientesRoute
   '/configuracoes': typeof ConfiguracoesRoute
   '/itens': typeof ItensRoute
+  '/login': typeof LoginRoute
   '/orcamentos': typeof OrcamentosRoute
   '/orcamento/$id': typeof OrcamentoIdRoute
 }
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
     | '/clientes'
     | '/configuracoes'
     | '/itens'
+    | '/login'
     | '/orcamentos'
     | '/orcamento/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/clientes'
     | '/configuracoes'
     | '/itens'
+    | '/login'
     | '/orcamentos'
     | '/orcamento/$id'
   id:
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/clientes'
     | '/configuracoes'
     | '/itens'
+    | '/login'
     | '/orcamentos'
     | '/orcamento/$id'
   fileRoutesById: FileRoutesById
@@ -104,6 +116,7 @@ export interface RootRouteChildren {
   ClientesRoute: typeof ClientesRoute
   ConfiguracoesRoute: typeof ConfiguracoesRoute
   ItensRoute: typeof ItensRoute
+  LoginRoute: typeof LoginRoute
   OrcamentosRoute: typeof OrcamentosRoute
   OrcamentoIdRoute: typeof OrcamentoIdRoute
 }
@@ -138,6 +151,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ItensRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/orcamentos': {
       id: '/orcamentos'
       path: '/orcamentos'
@@ -160,6 +180,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClientesRoute: ClientesRoute,
   ConfiguracoesRoute: ConfiguracoesRoute,
   ItensRoute: ItensRoute,
+  LoginRoute: LoginRoute,
   OrcamentosRoute: OrcamentosRoute,
   OrcamentoIdRoute: OrcamentoIdRoute,
 }

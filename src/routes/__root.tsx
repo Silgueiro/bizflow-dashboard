@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -15,6 +16,8 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { StoreProvider } from "@/lib/store";
+import { AuthProvider, useAuth } from "@/lib/auth";
+import { Loader2 } from "lucide-react";
 
 function NotFoundComponent() {
   return (
@@ -128,26 +131,67 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <StoreProvider>
-        <SidebarProvider>
-          <div className="flex min-h-screen w-full bg-background">
-            <AppSidebar />
-            <div className="flex min-w-0 flex-1 flex-col">
-              <header className="no-print sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-border bg-card/80 px-3 backdrop-blur">
-                <SidebarTrigger />
-                <span className="truncate text-sm font-medium text-muted-foreground">
-                  Painel administrativo
-                </span>
-              </header>
-              <main className="flex-1 p-4 md:p-8">
-                {/* Required: nested routes render here. */}
-                <Outlet />
-              </main>
-            </div>
-          </div>
-        </SidebarProvider>
-        <Toaster richColors position="top-right" />
-      </StoreProvider>
+      <AuthProvider>
+        <AuthGate>
+          <StoreProvider>
+            <SidebarProvider>
+              <div className="flex min-h-screen w-full bg-background">
+                <AppSidebar />
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <header className="no-print sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-border bg-card/80 px-3 backdrop-blur">
+                    <SidebarTrigger />
+                    <span className="truncate text-sm font-medium text-muted-foreground">
+                      Painel administrativo
+                    </span>
+                  </header>
+                  <main className="flex-1 p-4 md:p-8">
+                    {/* Required: nested routes render here. */}
+                    <Outlet />
+                  </main>
+                </div>
+              </div>
+            </SidebarProvider>
+            <Toaster richColors position="top-right" />
+          </StoreProvider>
+        </AuthGate>
+      </AuthProvider>
     </QueryClientProvider>
   );
+}
+
+function AuthGate({ children }: { children: ReactNode }) {
+  const { session, loading } = useAuth();
+  const pathname = useRouterState({ select: (r) => r.location.pathname });
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) return;
+    if (!session && pathname !== "/login") {
+      router.navigate({ to: "/login" });
+    }
+    if (session && pathname === "/login") {
+      router.navigate({ to: "/" });
+    }
+  }, [session, loading, pathname, router]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="mx-auto size-8 animate-spin text-muted-foreground" />
+          <p className="mt-4 text-sm text-muted-foreground">Redirecionando para o login...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
 }

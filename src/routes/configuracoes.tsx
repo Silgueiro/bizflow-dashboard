@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Building2, Save, Upload } from "lucide-react";
 import { toast } from "sonner";
 
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ProdutoImagem } from "@/components/produto-imagem";
+import { CepInput } from "@/components/cep-input";
 import { uploadImage } from "@/lib/supabase";
 import { EMPRESA_VAZIA, useStore, type Empresa } from "@/lib/store";
 import { maskDocumento, maskTelefone, validarDocumento } from "@/lib/documento";
@@ -38,6 +39,7 @@ function ConfiguracoesPage() {
   const [form, setForm] = useState<Empresa>(EMPRESA_VAZIA);
   const [erroDoc, setErroDoc] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const numeroRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (ready) setForm(empresa ?? EMPRESA_VAZIA);
@@ -179,13 +181,88 @@ function ConfiguracoesPage() {
             </div>
           </div>
           <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="endereco">Endereço completo</Label>
+            <Label htmlFor="endereco">Endereço (linha livre)</Label>
             <Textarea
               id="endereco"
               value={form.endereco}
               onChange={(e) => set("endereco")(e.target.value)}
               placeholder="Rua, número, bairro, cidade - UF, CEP"
               rows={2}
+            />
+          </div>
+          <CepInput
+            value={form.cep}
+            onChange={(cep) => set("cep")(cep)}
+            onResult={(addr) =>
+              setForm((f) => ({
+                ...f,
+                logradouro: addr.logradouro ?? f.logradouro,
+                neighborhood: addr.neighborhood ?? f.neighborhood,
+                city: addr.city ?? f.city,
+                state: addr.state ?? f.state,
+              }))
+            }
+            numeroRef={numeroRef}
+          />
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="logradouro">Logradouro</Label>
+            <Input
+              id="logradouro"
+              maxLength={120}
+              value={form.logradouro}
+              onChange={(e) => set("logradouro")(e.target.value)}
+              placeholder="Rua das Flores"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="number">Número</Label>
+            <Input
+              id="number"
+              ref={numeroRef}
+              maxLength={20}
+              value={form.number}
+              onChange={(e) => set("number")(e.target.value)}
+              placeholder="100"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="complement">Complemento</Label>
+            <Input
+              id="complement"
+              maxLength={60}
+              value={form.complement}
+              onChange={(e) => set("complement")(e.target.value)}
+              placeholder="Sala 201"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="neighborhood">Bairro</Label>
+            <Input
+              id="neighborhood"
+              maxLength={80}
+              value={form.neighborhood}
+              onChange={(e) => set("neighborhood")(e.target.value)}
+              placeholder="Centro"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="city">Cidade</Label>
+            <Input
+              id="city"
+              maxLength={80}
+              value={form.city}
+              onChange={(e) => set("city")(e.target.value)}
+              placeholder="São Paulo"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="state">Estado (UF)</Label>
+            <Input
+              id="state"
+              maxLength={2}
+              value={form.state}
+              onChange={(e) => set("state")(e.target.value.toUpperCase().slice(0, 2))}
+              placeholder="SP"
             />
           </div>
         </div>

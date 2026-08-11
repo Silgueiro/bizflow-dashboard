@@ -18,6 +18,13 @@ export type Cliente = {
   observacoes: string;
   cnpj: string;
   ie: string;
+  cep: string;
+  logradouro: string;
+  number: string;
+  complement: string;
+  neighborhood: string;
+  city: string;
+  state: string;
 };
 
 export type Item = {
@@ -45,6 +52,13 @@ export type Empresa = {
   email: string;
   endereco: string;
   logo: string;
+  cep: string;
+  logradouro: string;
+  number: string;
+  complement: string;
+  neighborhood: string;
+  city: string;
+  state: string;
 };
 
 export type Orcamento = {
@@ -84,12 +98,19 @@ export const EMPRESA_VAZIA: Empresa = {
   email: "",
   endereco: "",
   logo: "",
+  cep: "",
+  logradouro: "",
+  number: "",
+  complement: "",
+  neighborhood: "",
+  city: "",
+  state: "",
 };
 
 const StoreContext = createContext<Ctx | null>(null);
 
 // ---- DB row types ----
-type ClientRow = { id: string; name: string; email: string; phone: string; address: string; notes: string; cnpj: string; ie: string };
+type ClientRow = { id: string; name: string; email: string; phone: string; address: string; notes: string; cnpj: string; ie: string; cep: string; logradouro: string; number: string; complement: string; neighborhood: string; city: string; state: string };
 type ProductRow = { id: string; name: string; description: string; price: number; image_url: string; ncm: string };
 type QuoteRow = {
   id: string;
@@ -111,6 +132,13 @@ type CompanyRow = {
   email: string;
   address: string;
   logo_url: string;
+  cep: string;
+  logradouro: string;
+  number: string;
+  complement: string;
+  neighborhood: string;
+  city: string;
+  state: string;
 };
 
 const mapClient = (r: ClientRow): Cliente => ({
@@ -122,6 +150,13 @@ const mapClient = (r: ClientRow): Cliente => ({
   observacoes: r.notes ?? "",
   cnpj: r.cnpj ?? "",
   ie: r.ie ?? "",
+  cep: r.cep ?? "",
+  logradouro: r.logradouro ?? "",
+  number: r.number ?? "",
+  complement: r.complement ?? "",
+  neighborhood: r.neighborhood ?? "",
+  city: r.city ?? "",
+  state: r.state ?? "",
 });
 
 const mapProduct = (r: ProductRow): Item => ({
@@ -153,6 +188,13 @@ const mapCompany = (r: CompanyRow): Empresa => ({
   email: r.email ?? "",
   endereco: r.address ?? "",
   logo: r.logo_url ?? "",
+  cep: r.cep ?? "",
+  logradouro: r.logradouro ?? "",
+  number: r.number ?? "",
+  complement: r.complement ?? "",
+  neighborhood: r.neighborhood ?? "",
+  city: r.city ?? "",
+  state: r.state ?? "",
 });
 
 export function StoreProvider({ children }: { children: ReactNode }) {
@@ -192,6 +234,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       email: e.email,
       address: e.endereco,
       logo_url: e.logo,
+      cep: e.cep,
+      logradouro: e.logradouro,
+      number: e.number,
+      complement: e.complement,
+      neighborhood: e.neighborhood,
+      city: e.city,
+      state: e.state,
     };
     if (e.id) {
       const { data, error } = await supabase
@@ -222,6 +271,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       notes: c.observacoes,
       cnpj: c.cnpj,
       ie: c.ie,
+      cep: c.cep,
+      logradouro: c.logradouro,
+      number: c.number,
+      complement: c.complement,
+      neighborhood: c.neighborhood,
+      city: c.city,
+      state: c.state,
     };
     if (c.id) {
       const { data, error } = await supabase
